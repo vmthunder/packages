@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = virtman
+omit = virtman/tests/*,virtman/openstack/*
+
+[report]
+ignore-errors = True

@@ -1,0 +1,18 @@
+pbr>=0.6,<1.0
+Babel
+#
+# The greenlet package must be compiled with gcc and needs
+# the Python.h headers. Make sure you install the python-dev
+# package to get the right headers...
+greenlet
+
+eventlet
+PasteDeploy
+Routes
+WebOb
+
+# For paste.util.template used in keystone.common.template
+Paste
+
+#python-keystoneclient>=0.5.0
+#stevedore>=0.14

@@ -38,6 +38,8 @@ EXECUTOR = None
 
 MAX_POLLING_TIME = 30
 
+MAX_PARENT_NUM = 1
+
 def get_default_executor():
     global EXECUTOR
 

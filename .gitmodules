@@ -1,0 +1,9 @@
+[submodule "virtman"]
+	path = virtman
+	url = https://github.com/vmthunder/virtman.git
+[submodule "volt"]
+	path = volt
+	url = https://github.com/vmthunder/volt.git
+[submodule "python-voltclient"]
+	path = python-voltclient
+	url = https://github.com/vmthunder/python-voltclient.git

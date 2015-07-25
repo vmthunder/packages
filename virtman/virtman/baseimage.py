@@ -279,8 +279,7 @@ class BlockDeviceBaseImage(BaseImage):
                 LOG.debug("Virtman: create target complete, target id = %s" % self.target_id)
 
     def _delete_target(self):
-        LOG.debug("Virtman: start to remove target %s " % self.target_id)
-        iscsi.remove_iscsi_target(self.image_name, self.image_name)
+        iscsi.remove_iscsi_target(self.target_id, 1, self.image_name, self.image_name)
         self.has_target = False
         LOG.debug("Virtman: successful remove target %s " % self.target_id)
 

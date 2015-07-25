@@ -27,6 +27,7 @@ from volt.openstack.common.gettextutils import _
 from volt.openstack.common import log as logging
 
 import time, datetime, threading
+import random
 
 LOG = logging.getLogger(__name__)
 
@@ -118,6 +119,7 @@ class BTreeNode(object):
             peer_id = utils.generate_uuid(by_time=False, host=host, image_id=image_id)
             self.level = 0
         self.peer_id = peer_id
+        self.parents_list = None
 
     def identity(self):
         """ Make BTreeNode callable to return to client.
@@ -283,7 +285,13 @@ class BTree(object):
 
     def count(self):
         return len(self.nodes)
-
+    
+    def get_nodelist_identity(self, node_list=[]):
+        nodelist_identity = []
+        for node in node_list:
+            nodelist_identity.append(node.identity())
+        return nodelist_identity
+        
     def get_node_parents(self, node):
         """ Get the parents of a node
 
@@ -297,13 +305,42 @@ class BTree(object):
 
         parent_level = node.level - 1 
         parents_list = []
-        parents_list.append(node.parent.identity())
+        
+        # if parents_list exists, check wheather parents still in the tree
+        if node.parents_list:
+            if node.parent in node.parents_list and node.parent is \
+            not node.parents_list[0]:
+                node.parents_list.remove(node.parent)
+            if node.parent is not node.parents_list[0]:
+                node.parents_list[0] = node.parent 
+                
+        #The first time to get_node_parents
+        else:
+            node.parents_list = []
+            node.parents_list.append(node.parent)
         
         for parent_node in self.nodes.values():
-            if parent_node.level == parent_level and node is not node.parent:
-                parents_list.append(parent_node.identity())
-                
-        return parents_list
+                if parent_node.level == parent_level and parent_node is\
+                 not node.parent and parent_node.status == "OK":
+                    parents_list.append(parent_node)
+        
+        for parent_node in node.parents_list:
+            if parent_node is not node.parent and parent_node not in \
+            parents_list:
+                node.parents_list.remove(parent_node) 
+            
+        add_list = []
+        if executor.MAX_PARENT_NUM - len(node.parents_list) < \
+            len(parents_list):
+            add_list = random.sample(parents_list, executor.MAX_PARENT_NUM - \
+                                 len(node.parents_list))
+        else:
+            add_list = parents_list
+        node.parents_list.extend(add_list)
+            
+        del parents_list     
+            
+        return self.get_nodelist_identity(node.parents_list)
 
     def update_nodes(self, peer_id=None, host=None,
                      port=None, iqn=None, lun=None,
@@ -461,6 +498,7 @@ class BtreeExecutor(executor.Executor):
     
                 target = self.volumes[volume_id].nodes[peer_id]
             except Exception as exc:
+                target = None
                 LOG.debug(_(" fatal error occured insert_node_slot: %s" % exc))
 
         return target
@@ -471,8 +509,15 @@ class BtreeExecutor(executor.Executor):
         target = self.insert_node_slot(volume_id,
                                        peer_id=peer_id,
                                        host=host)
-
-        parents_list = self.get_parents_info(target)
+        
+        if target:
+            parents_list = self.get_parents_info(target)
+        else:
+            return \
+                {
+                    'peer_id': None,
+                    'parents': [{'peer_id': None}]
+                }
 
         return \
             {
